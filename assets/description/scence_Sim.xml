@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="inverted_pendulum">
+    <compiler angle="radian" meshdir="meshes" autolimits="true" balanceinertia="true" />
+    <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" />
+
+    <visual>
+        <!-- 质量 -->
+        <quality shadowsize="16384" numslices="28" offsamples="4" />
+        <headlight diffuse="1 1 1" specular="0.5 0.5 0.5" active="1" />
+    </visual>
+
+    <asset>
+        <!-- <texture type="skybox" file="./desert.png"
+            gridsize="3 4" gridlayout=".U..LFRB.D.." /> -->
+
+        <texture name="plane" type="2d" builtin="checker" rgb1=".3 .3 .3" rgb2=".7 .7 .7"
+            width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="plane" reflectance="0.3" texture="plane" texrepeat="1 1" texuniform="true" />
+        <!-- 这里要使用绝对路径 Absolute path-->
+        <!-- <hfield name="terrain" 
+            file="/home/huang/wheel_leg/wheel_legged_genesis_new/ramp_35deg_exact.png" 
+            size="0.5142 0.5000 0.15 0.1" /> -->
+        <hfield name="terrain" 
+            file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/terrain/png/terrain_dense_wave.png" 
+            size="3.0000 1.0000 0.0600 0.0001" /> 
+            <!-- 长，宽，高， -->
+    </asset>
+    <!-- 这里要使用绝对路径  Absolute path-->
+    <include file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/wheel_leg.xml"/>
+    <!-- <include file="/home/zhjkoi/wheel_leg_paper/wheel_legged_genesis/assets/mjcf/urdf2nz/urdf2nz.xml"/> -->
+    <worldbody>
+        <geom name="floor" pos="0 0 -0" size="0 0 .25" type="plane" material="plane"
+            condim="3" />
+        <geom type="hfield" hfield="terrain" pos="4 -0.0 0" rgba="0.8 0.8 0.8 1" />
+        <light directional="true" ambient=".3 .3 .3" pos="30 30 30" dir="0 -0.5 -1"
+            diffuse="0.5 0.5 0.5" specular="0.5 0.5 0.5" />
+       
+    </worldbody>
+</mujoco>

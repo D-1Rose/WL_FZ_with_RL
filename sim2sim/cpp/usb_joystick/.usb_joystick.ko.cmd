@@ -1,0 +1,1 @@
+savedcmd_/home/albusgive/CPP_space/usb_joystick/usb_joystick.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/albusgive/CPP_space/usb_joystick/usb_joystick.ko /home/albusgive/CPP_space/usb_joystick/usb_joystick.o /home/albusgive/CPP_space/usb_joystick/usb_joystick.mod.o

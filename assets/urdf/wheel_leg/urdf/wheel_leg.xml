@@ -1,0 +1,154 @@
+<mujoco model="wheel_leg">
+  <!-- <default>
+    <default class="robot">
+      <default >
+        <joint />
+        <motor />
+      </default>
+      <default class="visual">
+        <geom material="visualgeom" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom material="collision_material" condim="3" contype="0" conaffinity="1" group="1" solref="0.005 1" friction="1 0.01 0.01" />
+        <equality solimp="0.99 0.999 1e-05" solref="0.005 1" />
+      </default>
+    </default>
+  </default> -->
+
+  <compiler angle="radian" />
+  <!-- <default>
+        <joint limited='true'/>
+        <motor ctrllimited='true'/>
+        <geom  condim='4' contype="1" conaffinity="15" solref='0.001 2' friction='0.9 0.2 0.2'/>
+        <equality solref='0.001 2'/>
+    </default> -->
+  <option timestep="0.002" />
+  
+  <asset>
+    <material name="" rgba="1 1 1 1" />
+    <material name="default_material" rgba="0.7 0.7 0.7 1" />
+    <material name="collision_material" rgba="1.0 0.28 0.1 0.9" />
+    <mesh name="base_link.STL" file="base_link.STL" />
+    <mesh name="right_hip_link.STL" file="right_hip_link.STL" />
+    <mesh name="right_knee_link.STL" file="right_knee_link.STL" />
+    <mesh name="right_ankle_link.STL" file="right_ankle_link.STL" />
+    <mesh name="left_hip_link.STL" file="left_hip_link.STL" />
+    <mesh name="left_knee_link.STL" file="left_knee_link.STL" />
+    <mesh name="left_ankle_link.STL" file="left_ankle_link.STL" />
+  </asset>
+
+  <worldbody>
+    <body name="world" pos="0.00000000 0.00000000 0.30287618" quat="1 0 0 0" childclass="robot">
+      <freejoint name="floating_base"  />
+      <body name="base_link" pos="0 0 0.34" quat="1 0 0 0">
+        <inertial pos="0.01131 -0.0013618 -0.00028518" quat="1.0 0.0 0.0 0.0" mass="10.9637" diaginertia="0.032877 0.022941 0.041458" />
+        <site name='imu' size='0.01' pos='0.0 0 0.0' quat='1 0 0 0'/>
+
+        <geom name="base_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="base_link.STL" class="collision" />
+        <geom name="base_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="base_link.STL" class="visual" />
+        <body name="right_hip_link" pos="-0.001 -0.1785 -0.025" quat="0.6963627066132675 0.696365264501013 0.12278902327037451 -0.12278947430046978">
+          <joint name="right_thigh_joint" type="hinge" ref="0.0"  range="-3.14 3.14" axis="0 0 -1"/>
+          <inertial pos="0.020031 0.0032153 0.0036019" quat="1.0 0.0 0.0 0.0" mass="0.51378" diaginertia="0.00053799 0.0015906 0.0015943" />
+          <geom name="right_hip_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_hip_link.STL" class="collision" />
+          <geom name="right_hip_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="right_hip_link.STL" class="visual" />
+          <body name="right_knee_link" pos="0.15 0 0" quat="0.6755764902307104 0.0 0.0 -0.7372899062428258">
+            <joint name="right_calf_joint" type="hinge" ref="0.0"  range="-3.14 3.14" axis="0 0 -1"/>
+            <inertial pos="0.072881 0.034135 0.019602" quat="1.0 0.0 0.0 0.0" mass="0.27188" diaginertia="0.00060818 0.0018646 0.0022898" />
+            <geom name="right_knee_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_knee_link.STL" class="collision" />
+            <geom name="right_knee_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="right_knee_link.STL" class="visual" />
+            <body name="right_ankle_link" pos="0.25 0 0" quat="0.5373116855701493 0.0 0.0 0.8433837516515036">
+              <joint name="right_wheel_joint" type="hinge" ref="0.0"  axis="0 0 -1"/>
+              <inertial pos="3.3998E-05 -2.1315E-05 0.046652" quat="1.0 0.0 0.0 0.0" mass="1.3401" diaginertia="0.0034313 0.0034305 0.0062845" />
+              <geom name="right_ankle_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_ankle_link.STL" class="collision" />
+              <geom name="right_ankle_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="right_ankle_link.STL" class="visual" />
+            </body>
+          </body>
+        </body>
+        <body name="left_hip_link" pos="-0.00099957 0.1765 -0.024999" quat="0.6963627066132675 -0.696365264501013 0.12278902327037451 0.12278947430046978">
+          <joint name="left_thigh_joint" type="hinge" ref="0.0"  range="-3.14 3.14" axis="0 0 1"/>
+          <inertial pos="0.019888 -0.0032269 0.0036874" quat="1.0 0.0 0.0 0.0" mass="0.51183" diaginertia="0.00053571 0.0015772 0.0015814" />
+          <geom name="left_hip_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_hip_link.STL" class="collision" />
+          <geom name="left_hip_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="left_hip_link.STL" class="visual" />
+          <body name="left_knee_link" pos="0.15 0 0" quat="0.6755764902307104 0.0 0.0 0.7372899062428258">
+            <joint name="left_calf_joint" type="hinge" ref="0.0"  range="-3.14 3.14" axis="0 0 1"/>
+            <inertial pos="0.073104 -0.034096 0.019634" quat="1.0 0.0 0.0 0.0" mass="0.27057" diaginertia="0.00060605 0.0018598 0.0022833" />
+            <geom name="left_knee_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_knee_link.STL" class="collision" />
+            <geom name="left_knee_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="left_knee_link.STL" class="visual" />
+            <body name="left_ankle_link" pos="0.25 0 0" quat="0.5373116855701493 0.0 0.0 -0.8433837516515036">
+              <joint name="left_wheel_joint" type="hinge" ref="0.0"  axis="0 0 1"/>
+              <inertial pos="-1.783E-05 -3.5948E-05 0.046652" quat="1.0 0.0 0.0 0.0" mass="1.3401" diaginertia="0.0034303 0.0034315 0.0062845" />
+              <geom name="left_ankle_link_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_ankle_link.STL" class="collision" />
+              <geom name="left_ankle_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="" type="mesh" mesh="left_ankle_link.STL" class="visual" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <site name="world_site" pos="0 0 0" quat="1 0 0 0" />
+      <camera name="front_camera" mode="track" fovy="90.0" quat="4.329780281177467e-17 4.329780281177466e-17 0.7071067811865475 0.7071067811865476" pos="0.0 2.0 0.5" />
+      <camera name="side_camera" mode="track" fovy="90.0" quat="-0.5 -0.4999999999999999 0.5 0.5000000000000001" pos="-2.0 0.0 0.5" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- <motor name="right_thigh_joint_ctrl" joint="right_thigh_joint"  />
+    <motor name="right_calf_joint_ctrl" joint="right_calf_joint"  />
+    <motor name="right_wheel_joint_ctrl" joint="right_wheel_joint"  />
+    <motor name="left_thigh_joint_ctrl" joint="left_thigh_joint"  />
+    <motor name="left_calf_joint_ctrl" joint="left_calf_joint"  />
+    <motor name="left_wheel_joint_ctrl" joint="left_wheel_joint"  /> -->
+    <!-- <position joint="left_hip_joint" name="left_hip_joint" kp="80" kv="2" ctrlrange="-0.31416 0.31416"/> -->
+    <position joint="left_thigh_joint" name="left_thigh_joint" kp="30" kv="1.2" ctrlrange="-1.0472 0.5236" forcerange="-40 40"/>
+    <position joint="left_calf_joint" name="left_calf_joint" kp="30" kv="1.2" ctrlrange="0 1.3963" forcerange="-40 40"/>
+    <!-- <position joint="right_hip_joint" name="right_hip_joint" kp="30" kv="1.2" ctrlrange="-0.31416 0.31416"/> -->
+    <position joint="right_thigh_joint" name="right_thigh_joint" kp="30" kv="1.2" ctrlrange="-1.0472 0.5236" forcerange="-40 40"/>
+    <position joint="right_calf_joint" name="right_calf_joint" kp="30" kv="1.2" ctrlrange="0 1.3963" forcerange="-40 40"/>
+    <intvelocity joint="left_wheel_joint" name="left_wheel_joint" kp="30" kv="1.2"  forcerange="-40 40" actrange="-100 100"/>
+    <intvelocity joint="right_wheel_joint" name="right_wheel_joint" kp="30" kv="1.2"  forcerange="-40 40" actrange="-100 100"/>
+  </actuator>
+
+  <contact>
+    <exclude body1="base_link" body2="right_hip_link" />
+    <exclude body1="right_hip_link" body2="right_knee_link" />
+    <exclude body1="right_knee_link" body2="right_ankle_link" />
+    <exclude body1="base_link" body2="left_hip_link" />
+    <exclude body1="left_hip_link" body2="left_knee_link" />
+    <exclude body1="left_knee_link" body2="left_ankle_link" />
+  </contact>
+
+  <sensor>
+    <!-- <framepos name="world_site_pos" objtype="site" objname="world_site" />
+    <framequat name="world_site_quat" objtype="site" objname="world_site" />
+    <framelinvel name="world_site_linvel" objtype="site" objname="world_site" />
+    <frameangvel name="world_site_angvel" objtype="site" objname="world_site" />
+    <velocimeter name="world_site_vel" site="world_site" />
+
+    <framequat name='orientation' objtype='site' noise='0.001' objname='imu'/>
+    <framepos name='position' objtype='site' noise='0.001' objname='imu'/>
+    <gyro name='angular-velocity'    site='imu' noise='0.005' cutoff='34.9'/>
+    <velocimeter  name='linear-velocity'  site='imu' noise='0.001' cutoff='30'/>
+    <accelerometer name='linear-acceleration' site='imu' noise='0.005' cutoff='157'/>
+    <magnetometer  name='magnetometer'  site='imu'/> -->
+ 
+    <jointpos name='left_thigh_joint_p' joint='left_thigh_joint' />
+    <jointpos name='left_calf_joint_p' joint='left_calf_joint' />
+    <jointpos name='right_thigh_joint_p' joint='right_thigh_joint' />
+    <jointpos name='right_calf_joint_p' joint='right_calf_joint' />
+    <!-- <jointpos name='left_wheel_joint_p' joint='left_wheel_joint' />
+    <jointpos name='right_wheel_joint_p' joint='right_wheel_joint' /> -->
+
+    <jointvel name='left_thigh_joint_v' joint='left_thigh_joint' />
+    <jointvel name='left_calf_joint_v' joint='left_calf_joint' />
+    <jointvel name='right_thigh_joint_v' joint='right_thigh_joint' />
+    <jointvel name='right_calf_joint_v' joint='right_calf_joint' />
+    <jointvel name='left_wheel_joint_v' joint='left_wheel_joint' />
+    <jointvel name='right_wheel_joint_v' joint='right_wheel_joint' />
+
+    <framequat name='orientation' objtype='site' objname='imu' />
+    <subtreelinvel name="base_lin_vel" body="base_link" />
+    <gyro name='base_ang_vel' site='imu' />
+    <framepos name='base_pos' objtype='body' objname='base_link' />
+    <!-- <accelerometer name="projected_gravity" site="imu" /> -->
+
+
+  </sensor>
+</mujoco>

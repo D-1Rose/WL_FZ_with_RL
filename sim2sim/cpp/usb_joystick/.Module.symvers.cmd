@@ -1,0 +1,1 @@
+savedcmd_/home/albusgive/CPP_space/usb_joystick/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/albusgive/CPP_space/usb_joystick/Module.symvers -T /home/albusgive/CPP_space/usb_joystick/modules.order -i Module.symvers -e 

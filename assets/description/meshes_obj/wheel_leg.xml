@@ -1,0 +1,176 @@
+<mujoco model="wheel_leg">
+  <default>
+    <default class="robot">
+      <default class="motor">
+        <!-- 从URDF恢复：damping=0.5, frictionloss=0.5（髋膝关节） -->
+        <!-- 轮子关节(L3/R3)在URDF中damping=0, friction=0，单独在joint里设置 -->
+        <joint damping="0.5" frictionloss="0.5" />
+        <!-- ctrlrange放开到300（对应URDF effort=300），gear=1 -->
+        <motor gear="1" ctrllimited="true" ctrlrange="-300 300" />
+      </default>
+      <default class="visual">
+        <geom material="visualgeom" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom material="collision_material" condim="3" contype="0" conaffinity="1"
+              priority="1" group="1" solref="0.005 1" solimp="0.99 0.999 1e-05"
+              friction="1 0.01 0.01" />
+      </default>
+    </default>
+  </default>
+
+  <compiler angle="radian" meshdir="../meshes_obj" />
+
+  <asset>
+    <material name="visualgeom"        rgba="0.52941 0.54902 0.54902 1" />
+    <material name="default_material"  rgba="0.7 0.7 0.7 1" />
+    <material name="collision_material" rgba="1.0 0.28 0.1 0.9" />
+    <mesh name="base_link.obj" file="base_link.obj" />
+    <mesh name="L1_link.obj"   file="L1_link.obj" />
+    <mesh name="L2_link.obj"   file="L2_link.obj" />
+    <mesh name="L3_link.obj"   file="L3_link.obj" />
+    <mesh name="R1_link.obj"   file="R1_link.obj" />
+    <mesh name="R2_link.obj"   file="R2_link.obj" />
+    <mesh name="R3_link.obj"   file="R3_link.obj" />
+  </asset>
+
+  <worldbody>
+    <body name="base_link" pos="0 0 0.38" quat="1 0 0 0" childclass="robot">
+      <freejoint name="floating_base" />
+      <!-- base_link 惯性：从URDF直接取 -->
+      <inertial pos="0 0 0" quat="1 0 0 0" mass="4.6328"
+                diaginertia="0.056559 0.057098 0.091137" />
+      <geom name="base_link_collision" pos="0 0 0" quat="1 0 0 0"
+            type="mesh" mesh="base_link.obj" class="collision" />
+      <geom name="base_link_visual"    pos="0 0 0" quat="1 0 0 0"
+            material="visualgeom" type="mesh" mesh="base_link.obj" class="visual" />
+
+      <!-- ===== 左腿 ===== -->
+      <!-- L1_joint: xyz="0 0.143 0" rpy="-1.5708 0.34907 0"
+           => quat w=0.69636 x=-0.69637 y=0.12279 z=0.12279 -->
+      <body name="L1_link" pos="0 0.143 0"
+            quat="0.6963627066 -0.6963652645 0.1227890233 0.1227894743">
+        <!-- L1_joint: revolute, range=-0.34905~1.22169, damping/friction由default继承 -->
+        <joint name="L1_joint" type="hinge" class="motor"
+               range="-0.34905 1.22169" axis="0 0 1" ref="0" />
+        <inertial pos="0.075 0 0.01" quat="1 0 0 0" mass="1.3011"
+                  diaginertia="0.00025247 0.0038001 0.0039659" />
+        <geom name="L1_link_collision" pos="0 0 0" quat="1 0 0 0"
+              type="mesh" mesh="L1_link.obj" class="collision" />
+        <geom name="L1_link_visual"    pos="0 0 0" quat="1 0 0 0"
+              material="visualgeom" type="mesh" mesh="L1_link.obj" class="visual" />
+
+        <!-- L2_joint: xyz="0.15 0 0" rpy="0 0 1.6581"
+             => quat w=0.67558 x=0 y=0 z=0.73729 -->
+        <body name="L2_link" pos="0.15 0 0"
+              quat="0.6755764902 0 0 0.7372899062">
+          <!-- L2_joint: revolute, range=-1.570796~1.047197, damping/friction由default继承 -->
+          <joint name="L2_joint" type="hinge" class="motor"
+                 range="-1.570796 1.047197" axis="0 0 1" ref="0" />
+          <inertial pos="0.125 0 0.01" quat="1 0 0 0" mass="2.0031"
+                    diaginertia="0.00039433 0.013708 0.013969" />
+          <geom name="L2_link_collision" pos="0 0 0" quat="1 0 0 0"
+                type="mesh" mesh="L2_link.obj" class="collision" />
+          <geom name="L2_link_visual"    pos="0 0 0" quat="1 0 0 0"
+                material="visualgeom" type="mesh" mesh="L2_link.obj" class="visual" />
+
+          <!-- L3_joint: xyz="0.25 0 0" rpy="0 0 -2.0071"
+               => quat w=0.53731 x=0 y=0 z=-0.84338
+               URDF: continuous(无限位), damping=0, friction=0 => 单独覆盖default -->
+          <body name="L3_link" pos="0.25 0 0"
+                quat="0.5373116856 0 0 -0.8433837517">
+            <!-- 轮子关节：无限位，阻尼=0摩擦=0（覆盖default） -->
+            <joint name="L3_joint" type="hinge" class="motor"
+                   axis="0 0 1" damping="0" frictionloss="0" />
+            <inertial pos="0 0 0.01" quat="1 0 0 0" mass="1.6268"
+                      diaginertia="0.0040743 0.0040743 0.0072906" />
+            <geom name="L3_link_collision" pos="0 0 0" quat="1 0 0 0"
+                  type="mesh" mesh="L3_link.obj" class="collision" />
+            <geom name="L3_link_visual"    pos="0 0 0" quat="1 0 0 0"
+                  material="visualgeom" type="mesh" mesh="L3_link.obj" class="visual" />
+          </body>
+        </body>
+      </body>
+
+      <!-- ===== 右腿 ===== -->
+      <!-- R1_joint: xyz="0 -0.143 0" rpy="1.5708 0.34907 0"
+           => quat w=0.69636 x=0.69637 y=0.12279 z=-0.12279 -->
+      <body name="R1_link" pos="0 -0.143 0"
+            quat="0.6963627066 0.6963652645 0.1227890233 -0.1227894743">
+        <!-- R1_joint: revolute, range=-1.22169~0.34905, damping/friction由default继承 -->
+        <joint name="R1_joint" type="hinge" class="motor"
+               range="-1.22169 0.34905" axis="0 0 1" ref="0" />
+        <inertial pos="0.075 0 0.01" quat="1 0 0 0" mass="1.3011"
+                  diaginertia="0.00025247 0.0038001 0.0039659" />
+        <geom name="R1_link_collision" pos="0 0 0" quat="1 0 0 0"
+              type="mesh" mesh="R1_link.obj" class="collision" />
+        <geom name="R1_link_visual"    pos="0 0 0" quat="1 0 0 0"
+              material="visualgeom" type="mesh" mesh="R1_link.obj" class="visual" />
+
+        <!-- R2_joint: xyz="0.15 0 0" rpy="0 0 -1.6581"
+             => quat w=0.67558 x=0 y=0 z=-0.73729 -->
+        <body name="R2_link" pos="0.15 0 0"
+              quat="0.6755764902 0 0 -0.7372899062">
+          <!-- R2_joint: revolute, range=-1.047197~1.570796, damping/friction由default继承 -->
+          <joint name="R2_joint" type="hinge" class="motor"
+                 range="-1.047197 1.570796" axis="0 0 1" ref="0" />
+          <inertial pos="0.125 0 0.01" quat="1 0 0 0" mass="2.0031"
+                    diaginertia="0.00039433 0.013708 0.013969" />
+          <geom name="R2_link_collision" pos="0 0 0" quat="1 0 0 0"
+                type="mesh" mesh="R2_link.obj" class="collision" />
+          <geom name="R2_link_visual"    pos="0 0 0" quat="1 0 0 0"
+                material="visualgeom" type="mesh" mesh="R2_link.obj" class="visual" />
+
+          <!-- R3_joint: xyz="0.25 0 0" rpy="0 0 2.0071"
+               => quat w=0.53731 x=0 y=0 z=0.84338
+               URDF: continuous(无限位), damping=0, friction=0 => 单独覆盖default -->
+          <body name="R3_link" pos="0.25 0 0"
+                quat="0.5373116856 0 0 0.8433837517">
+            <!-- 轮子关节：无限位，阻尼=0摩擦=0（覆盖default） -->
+            <joint name="R3_joint" type="hinge" class="motor"
+                   axis="0 0 1" damping="0" frictionloss="0" />
+            <inertial pos="0 0 0.01" quat="1 0 0 0" mass="1.6268"
+                      diaginertia="0.0040743 0.0040743 0.0072906" />
+            <geom name="R3_link_collision" pos="0 0 0" quat="1 0 0 0"
+                  type="mesh" mesh="R3_link.obj" class="collision" />
+            <geom name="R3_link_visual"    pos="0 0 0" quat="1 0 0 0"
+                  material="visualgeom" type="mesh" mesh="R3_link.obj" class="visual" />
+          </body>
+        </body>
+      </body>
+
+      <site name="base_link_site" pos="0 0 0" quat="1 0 0 0" />
+      <camera name="front_camera" mode="track" fovy="90"
+              pos="0 2 0.5" quat="0 0 0.7071067812 0.7071067812" />
+      <camera name="side_camera" mode="track" fovy="90"
+              pos="-2 0 0.5" quat="-0.5 -0.5 0.5 0.5" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="L1_joint_ctrl"  joint="L1_joint"  class="motor" />
+    <motor name="L2_joint_ctrl"  joint="L2_joint"  class="motor" />
+    <motor name="L3_joint_ctrl"  joint="L3_joint"  class="motor" />
+    <motor name="R1_joint_ctrl"  joint="R1_joint"  class="motor" />
+    <motor name="R2_joint_ctrl"  joint="R2_joint"  class="motor" />
+    <motor name="R3_joint_ctrl"  joint="R3_joint"  class="motor" />
+  </actuator>
+
+  <contact>
+    <exclude body1="base_link" body2="L1_link" />
+    <exclude body1="L1_link"   body2="L2_link" />
+    <exclude body1="L2_link"   body2="L3_link" />
+    <exclude body1="base_link" body2="R1_link" />
+    <exclude body1="R1_link"   body2="R2_link" />
+    <exclude body1="R2_link"   body2="R3_link" />
+  </contact>
+
+  <sensor>
+    <framepos    name="base_link_site_pos"    objtype="site" objname="base_link_site" />
+    <framequat   name="base_link_site_quat"   objtype="site" objname="base_link_site" />
+    <framelinvel name="base_link_site_linvel" objtype="site" objname="base_link_site" />
+    <frameangvel name="base_link_site_angvel" objtype="site" objname="base_link_site" />
+    <velocimeter name="base_link_site_vel"    site="base_link_site" />
+  </sensor>
+
+</mujoco>

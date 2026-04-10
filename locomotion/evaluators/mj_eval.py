@@ -1,0 +1,410 @@
+import time
+import math
+import numpy as np
+import torch
+import mujoco
+import mujoco.viewer
+from transforms3d import euler, quaternions
+import argparse
+import os
+import csv
+from datetime import datetime
+from torch.utils.tensorboard import SummaryWriter
+import matplotlib.pyplot as plt  # [新增] 导入绘图库
+
+# 文件索引系统（确保导入兼容性）- 修复mj导入问题
+import sys
+sys.path.insert(0, '.')
+try:
+    import file_index
+    file_index.install_file_index()
+    print("✅ 文件索引系统已加载")
+except ImportError as e:
+    print(f"⚠️  文件索引加载失败: {e}")
+    print("   尝试直接导入...")
+
+# 引入你的原始控制器
+# 使用文件索引系统重定向（保持兼容性）
+from mj import LQR_Controller, VMC, PIDController
+from mj_keyboard import KeyboardCommander
+
+# --- 配置参数 (必须与 Genesis 训练配置完全一致) ---
+class CFG:
+    default_dof_pos = np.array([
+        -0.28, 0.3385,  # L1, L2
+        0.28, -0.3385,  # R1, R2
+        0.0, 0.0        # L3, R3
+    ])
+    
+    num_actions = 3   
+    num_obs = 31      
+    history_len = 5
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    sim_dt = 0.002     # 时间步长（对应500Hz控制频率，固定不要修改！）
+    control_decimation = 10
+    target_velocity = 1.0
+    target_yaw_rate = 0.0
+
+class RL_Adapter:
+    def __init__(self, model_path, model):
+        self.device = CFG.device
+        print(f"正在加载策略模型: {model_path}")
+        self.policy = torch.jit.load(model_path).to(self.device)
+        self.policy.eval()
+        
+        # 历史观测 Buffer: (1, 5, 31)
+        self.obs_history = torch.zeros((1, CFG.history_len, CFG.num_obs), device=self.device)
+        
+        # 上一帧动作 (1, 3)
+        self.last_actions = torch.zeros((1, CFG.num_actions), device=self.device)
+        
+        # [核心修复] 上一帧物理参数初始化，直接对齐 Genesis 专家参数
+        # 顺序必须是: gamma_d_g (75度), eth (0.05), a (0.05)
+        self.last_phy_params = torch.tensor([[
+            75.0 * math.pi / 180.0, 0.05, 0.05
+        ]], device=self.device)
+
+        # 关节顺序映射 (Genesis: L1, L2, R1, R2, L3, R3)
+        self.joint_names = ["L1_joint", "L2_joint", "R1_joint", "R2_joint", "L3_joint", "R3_joint"]
+        self.joint_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name) for name in self.joint_names]
+        
+        if -1 in self.joint_ids:
+            print("⚠️ 警告: 有关节 ID 未找到，请检查 XML 中的关节名称是否与 Genesis 一致！")
+            
+    def get_observation(self, data, lqr_ctrl, target_vel_x, target_yaw_dot):
+        qpos = data.qpos
+        qvel = data.qvel
+        quat = qpos[3:7]  
+        
+        v_world = qvel[0:3]
+        w_body = qvel[3:6]
+        
+        R = quaternions.quat2mat(quat) 
+        v_body = R.T @ v_world
+        projected_gravity = R.T @ np.array([0.0, 0.0, -1.0])
+        
+        dof_pos = np.array([qpos[i] for i in self.joint_ids])
+        dof_vel = np.array([qvel[i] for i in self.joint_ids])
+        
+        # 严格对齐 Genesis：直接使用物理真值，不乘 scales
+        obs_lin_vel = torch.tensor(v_body, device=self.device).float()
+        obs_ang_vel = torch.tensor(w_body, device=self.device).float()
+        obs_gravity = torch.tensor(projected_gravity, device=self.device).float()
+        obs_commands = torch.tensor([target_vel_x, 0.0, target_yaw_dot, 0.28], device=self.device).float()
+        
+        dof_pos_err = dof_pos[0:4] - CFG.default_dof_pos[0:4]
+        obs_dof_pos = torch.tensor(dof_pos_err, device=self.device).float()
+        obs_dof_vel = torch.tensor(dof_vel, device=self.device).float()
+        
+        obs_actions = self.last_actions.squeeze(0).float()
+        obs_params = self.last_phy_params.squeeze(0).float() 
+        obs_pitch = torch.tensor([lqr_ctrl.pitch, lqr_ctrl.pitch_dot], device=self.device).float()
+        
+        # 拼接 31 维
+        current_obs = torch.cat([
+            obs_lin_vel, 
+            obs_ang_vel, 
+            obs_gravity, 
+            obs_commands,
+            obs_dof_pos, 
+            obs_dof_vel, 
+            obs_actions, 
+            obs_params, 
+            obs_pitch
+        ]).unsqueeze(0) 
+
+        return current_obs
+
+    def scale_param(self, action, default, min_val, max_val, factor=0.2):
+        span = max_val - min_val
+        param = default + action * (span * factor)
+        return max(min(param, max_val), min_val)
+
+    def step(self, data, lqr_ctrl, target_vel, target_yaw):
+        slice_obs = self.get_observation(data, lqr_ctrl, target_vel, target_yaw)
+        policy_input = torch.cat([self.obs_history, slice_obs.unsqueeze(1)], dim=1).view(1, -1)
+        
+        with torch.no_grad():
+            raw_actions = self.policy(policy_input)
+            raw_actions = torch.clip(raw_actions, -5.0, 5.0) 
+            
+        self.obs_history[:, :-1, :] = self.obs_history[:, 1:, :].clone()
+        self.obs_history[:, -1, :] = slice_obs
+
+        smooth_factor = 0.60 
+        current_action = smooth_factor * self.last_actions + (1 - smooth_factor) * raw_actions
+        
+        params = {}
+        act_0 = current_action[0, 0].item()
+        act_1 = current_action[0, 1].item()
+        act_2 = current_action[0, 2].item()
+
+        params["gamma_d_g"] = self.scale_param(act_0, 75.0 * math.pi/180.0, 45.0 * math.pi/180.0, 89.0 * math.pi/180.0, factor=0.3)
+        params["eth"] = self.scale_param(act_1, 0.05, 0.01, 0.1, factor=0.2)
+        params["a"] = self.scale_param(act_2, 0.05, 0.01, 0.99, factor=0.2)
+
+        self.last_actions = current_action
+        
+        self.last_phy_params = torch.tensor([[
+            params["gamma_d_g"], params["eth"], params["a"]
+        ]], device=self.device)
+        
+        return params
+
+# --- Main 函数 ---
+def main():
+    parser = argparse.ArgumentParser(description="MuJoCo Eval with TensorBoard, CSV & Auto Plot")
+    parser.add_argument("--RL", action="store_true", help="开启 RL 参数自适应")
+    parser.add_argument("--log_name", type=str, default="experiment", help="日志名称前缀")
+    parser.add_argument("--model", type=str, default="policy_fused.pt", help="RL模型文件路径（默认：policy_fused.pt）")
+    args = parser.parse_args()
+    
+    print(f"\n📋 配置信息:")
+    print(f"  时间步长: {CFG.sim_dt} s (500Hz控制频率，固定)")
+    print(f"  控制频率: {CFG.control_decimation}")
+
+    xml_path = "/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/urdf/scence.xml"
+    model = mujoco.MjModel.from_xml_path(xml_path)
+    data = mujoco.MjData(model)
+    model.opt.timestep = CFG.sim_dt 
+
+    # =================================================================
+    TARGET_V_FINAL = CFG.target_velocity     
+    MAX_ACCEL = 1.0           
+    WARM_UP_TIME = 1        
+    FINISH_LINE_X = 7.5       
+    max_dv = MAX_ACCEL * model.opt.timestep 
+    accel_dist = (TARGET_V_FINAL**2) / (2 * MAX_ACCEL)
+    
+    print(f"\n🚀 自动加速模式已启动:")
+    print(f"   目标速度: {TARGET_V_FINAL} m/s | 设定加速度: {MAX_ACCEL} m/s²")
+    print(f"   终点线位置: {FINISH_LINE_X} m\n")
+
+    # ================== 初始化日志与数据记录 ==================
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    mode_str = "WithRL" if args.RL else "NoRL"
+    log_dir = f"logs/mujoco_comparison/{args.log_name}_{mode_str}_{timestamp}"
+    
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        
+    writer = SummaryWriter(log_dir)
+    
+    # [修改] 更新 CSV 表头
+    csv_filename = f"robot_log_{mode_str}_{timestamp}.csv"
+    csv_path = os.path.join(log_dir, csv_filename)
+    header = ['time', 'target_v', 'real_v', 'vel_error', 'pitch_deg', 'roll_deg', 'gamma_deg', 'eth', 'a']
+    csv_file = open(csv_path, mode='w', newline='')
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(header)
+
+    # [新增] 用于最终绘图的内存数据列表
+    plot_time = []
+    plot_target_v = []
+    plot_real_v = []
+    plot_vel_err = []
+    plot_pitch = []
+    plot_roll = []
+    plot_gamma = []
+    plot_eth = []
+    plot_a = []
+
+    vmc_ctrl = VMC(model)
+    lqr_ctrl = LQR_Controller(model)
+    rl_adapter = None
+    if args.RL:
+        # 使用用户指定的模型路径，或默认的policy_fused.pt
+        policy_path = args.model
+        if not os.path.exists(policy_path):
+            print(f"⚠️  模型文件不存在: {policy_path}")
+            print(f"   请确保模型文件存在，或使用 --model 参数指定正确路径")
+            print(f"   例如: --model locomotion/logs/my_exp_eval/policy_fused.pt")
+            return
+        
+        try:
+            rl_adapter = RL_Adapter(policy_path, model)
+            print(f"✅ 已加载RL模型: {policy_path}")
+        except Exception as e:
+            print(f"❌ 无法加载模型: {e}")
+            print(f"   请检查模型文件格式是否正确（应为TorchScript .pt文件）")
+            return
+
+    smoothed_v = 0.0
+    
+    with mujoco.viewer.launch_passive(model, data) as viewer:
+        step = 0
+        step_counter = 0
+        current_fuzzy_params = lqr_ctrl.fuzzy_params.copy()
+        prev_sim_time = 0.0
+        model.opt.timestep = 0.002
+        render_fps = 60 
+        physics_steps_per_render = int((1.0 / render_fps) / model.opt.timestep) 
+
+        while viewer.is_running():
+            step_start = time.perf_counter() 
+            
+            for _ in range(physics_steps_per_render):
+                current_x = data.body('base_link').xpos[0]
+                real_vel = lqr_ctrl.robot_x_velocity 
+                step += 1
+                
+                if current_x >= FINISH_LINE_X:
+                    print(f"\n🏁 [终点达成] 机器人已越过终点线 ({current_x:.2f}m >= {FINISH_LINE_X}m)")
+                    viewer.close() 
+                    break 
+                
+                # 脚本按冲线逻辑结束，不设步数限制
+
+                if data.time < prev_sim_time:
+                    lqr_ctrl.reset()
+                    smoothed_v = 0.0  
+                    if args.RL and rl_adapter is not None:
+                        rl_adapter.obs_history.zero_()
+                        rl_adapter.last_actions.zero_()
+                        
+                    # 清空绘图数据重新记录
+                    plot_time.clear(); plot_target_v.clear(); plot_real_v.clear()
+                    plot_vel_err.clear(); plot_pitch.clear(); plot_roll.clear()
+                    plot_gamma.clear(); plot_eth.clear(); plot_a.clear()
+                
+                current_target = TARGET_V_FINAL if data.time > WARM_UP_TIME else 0.0
+                v_diff = current_target - smoothed_v
+                v_diff = np.clip(v_diff, -max_dv, max_dv)
+                smoothed_v += v_diff
+                
+                target_v = smoothed_v
+                lqr_ctrl.velocity_d = smoothed_v
+                lqr_ctrl.yaw_d = 0.0
+                lqr_ctrl.update_imu_data(data)
+                lqr_ctrl.update_joint_states(data)
+                vmc_ctrl.update_states(data)
+
+                if args.RL and (step_counter % CFG.control_decimation == 0):
+                    current_fuzzy_params = rl_adapter.step(data, lqr_ctrl, target_v, 0.0)
+                
+                lqr_ctrl.fuzzy_params = current_fuzzy_params
+
+                vmc_ctrl.vmc(data)
+                lqr_ctrl.balance(data)
+                mujoco.mj_step(model, data)
+
+                # ================== 统一数据记录逻辑 ==================
+                if step_counter % 10 == 0:
+                    # 1. 提取各项数据
+                    vel_error = target_v - real_vel
+                    # 确保姿态转化为角度制方便观察
+                    pitch_deg = lqr_ctrl.pitch * 180 / math.pi
+                    roll_deg = lqr_ctrl.roll * 180 / math.pi
+                    
+                    gamma_deg = current_fuzzy_params['gamma_d_g'] * 180/math.pi
+                    eth_val = current_fuzzy_params['eth']
+                    a_val = current_fuzzy_params['a']
+                    
+                    # 2. 写入 TensorBoard
+                    writer.add_scalar("Tracking/Vel_Target", target_v, step_counter)
+                    writer.add_scalar("Tracking/Vel_Real", real_vel, step_counter)
+                    writer.add_scalar("Tracking/Vel_Error", vel_error, step_counter)
+                    writer.add_scalar("Attitude/Pitch_deg", pitch_deg, step_counter)
+                    writer.add_scalar("Attitude/Roll_deg", roll_deg, step_counter)
+                    writer.add_scalar("Params/Gamma_deg", gamma_deg, step_counter)
+                    writer.add_scalar("Params/Eth", eth_val, step_counter)
+                    writer.add_scalar("Params/A", a_val, step_counter)
+
+                    # 3. 写入 CSV
+                    csv_writer.writerow([
+                        f"{data.time:.4f}", f"{target_v:.4f}", f"{real_vel:.4f}", 
+                        f"{vel_error:.4f}", f"{pitch_deg:.4f}", f"{roll_deg:.4f}",
+                        f"{gamma_deg:.4f}", f"{eth_val:.4f}", f"{a_val:.4f}"
+                    ])
+
+                    # 4. 存入内存用于最后绘图
+                    plot_time.append(data.time)
+                    plot_target_v.append(target_v)
+                    plot_real_v.append(real_vel)
+                    plot_vel_err.append(vel_error)
+                    plot_pitch.append(pitch_deg)
+                    plot_roll.append(roll_deg)
+                    plot_gamma.append(gamma_deg)
+                    plot_eth.append(eth_val)
+                    plot_a.append(a_val)
+
+                if step % 50 == 0:
+                    print(f"Time: {data.time:.2f}s | Pos X: {current_x:.2f}m | Tgt V: {target_v:.2f} | Real V: {real_vel:.2f}")
+
+                prev_sim_time = data.time
+                step_counter += 1
+            
+            if not viewer.is_running():
+                break
+
+            viewer.sync()
+            expected_time = physics_steps_per_render * model.opt.timestep
+            elapsed = time.perf_counter() - step_start
+            if elapsed < expected_time:
+                time.sleep(expected_time - elapsed)
+
+    csv_file.close()
+    print(f"\n✅ 仿真结束，实验数据已保存至: {csv_path}")
+
+    # ================== [新增] 自动化数据绘图 ==================
+    if len(plot_time) > 0:
+        print("📈 正在生成数据可视化图表...")
+        plt.figure(figsize=(14, 12))
+        
+        # 子图 1: 目标速度与实际速度
+        plt.subplot(4, 1, 1)
+        plt.plot(plot_time, plot_target_v, label='Target Velocity', linestyle='--', color='black', linewidth=2)
+        plt.plot(plot_time, plot_real_v, label='Real Velocity', color='blue', alpha=0.8)
+        plt.title('Velocity Tracking', fontsize=12, fontweight='bold')
+        plt.ylabel('Velocity (m/s)')
+        plt.legend(loc='lower right')
+        plt.grid(True, linestyle=':', alpha=0.7)
+
+        # 子图 2: 速度误差
+        plt.subplot(4, 1, 2)
+        plt.plot(plot_time, plot_vel_err, label='Velocity Error', color='red', alpha=0.8)
+        plt.axhline(0, color='black', linestyle='--', linewidth=1)
+        plt.title('Velocity Error', fontsize=12, fontweight='bold')
+        plt.ylabel('Error (m/s)')
+        plt.legend(loc='lower right')
+        plt.grid(True, linestyle=':', alpha=0.7)
+
+        # 子图 3: 俯仰角与侧倾角变化
+        plt.subplot(4, 1, 3)
+        plt.plot(plot_time, plot_pitch, label='Pitch (deg)', color='orange')
+        plt.plot(plot_time, plot_roll, label='Roll (deg)', color='green')
+        plt.axhline(0, color='black', linestyle='--', linewidth=1)
+        plt.title('Attitude Variation', fontsize=12, fontweight='bold')
+        plt.ylabel('Angle (Degree)')
+        plt.legend(loc='lower right')
+        plt.grid(True, linestyle=':', alpha=0.7)
+
+        # 子图 4: 模糊参数变化 (由于量纲不同，使用双 Y 轴)
+        ax4_1 = plt.subplot(4, 1, 4)
+        line1 = ax4_1.plot(plot_time, plot_gamma, label='Gamma (deg)', color='purple', linewidth=2)
+        ax4_1.set_ylabel('Gamma (Degree)', color='purple')
+        ax4_1.tick_params(axis='y', labelcolor='purple')
+        ax4_1.set_xlabel('Time (s)')
+        ax4_1.grid(True, linestyle=':', alpha=0.7)
+
+        ax4_2 = ax4_1.twinx()  # 创建共享 X 轴的副 Y 轴
+        line2 = ax4_2.plot(plot_time, plot_eth, label='Eth', color='cyan', alpha=0.8)
+        line3 = ax4_2.plot(plot_time, plot_a, label='A', color='brown', alpha=0.8)
+        ax4_2.set_ylabel('Eth / A Value', color='black')
+        
+        # 合并双 Y 轴的图例
+        lines = line1 + line2 + line3
+        labels = [l.get_label() for l in lines]
+        ax4_1.legend(lines, labels, loc='lower right')
+        plt.title('Fuzzy Parameters Variation', fontsize=12, fontweight='bold')
+
+        # 调整布局并保存
+        plt.tight_layout()
+        plot_filepath = os.path.join(log_dir, f"Analysis_Plot_{mode_str}.png")
+        plt.savefig(plot_filepath, dpi=300)
+        plt.close()
+        print(f"🖼️ 高清图表已生成并保存至: {plot_filepath}")
+
+if __name__ == "__main__":
+    main()

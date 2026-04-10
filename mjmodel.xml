@@ -1,0 +1,114 @@
+<mujoco model="inverted_pendulum">
+  <compiler angle="radian" meshdir="../meshes_obj/"/>
+
+  <option integrator="implicitfast"/>
+
+  <visual>
+    <quality shadowsize="16384"/>
+    <headlight diffuse="1 1 1"/>
+  </visual>
+
+  <default>
+    <default class="robot">
+      <default class="motor"/>
+      <default class="visual">
+        <geom contype="0" conaffinity="0" group="2" material="visualgeom"/>
+      </default>
+      <default class="collision">
+        <geom contype="0" group="1" priority="1" friction="1 0.01 0.01" solref="0.005" solimp="0.99 0.999 1e-05" material="collision_material"/>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="2d" name="plane" builtin="checker" mark="cross" rgb1="0.3 0.3 0.3" rgb2="0.7 0.7 0.7" markrgb="0.8 0.8 0.8" width="512" height="512"/>
+    <material name="plane" texture="plane" texuniform="true" reflectance="0.3"/>
+    <material name="visualgeom" rgba="0.29804 0.29804 0.29804 1"/>
+    <material name="default_material" rgba="0.7 0.7 0.7 1"/>
+    <material name="collision_material" rgba="1 0.28 0.1 0.9"/>
+    <mesh name="base_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/base_link.obj"/>
+    <mesh name="L1_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/L1_link.obj"/>
+    <mesh name="L2_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/L2_link.obj"/>
+    <mesh name="L3_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/L3_link.obj"/>
+    <mesh name="R1_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/R1_link.obj"/>
+    <mesh name="R2_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/R2_link.obj"/>
+    <mesh name="R3_link.obj" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/meshes_obj/R3_link.obj"/>
+    <hfield name="terrain" size="3 1 0.06 0.0001" file="/home/huang/wheel_leg/wheel_legged_genesis_new/assets/terrain/png/terrain_dense_wave.png"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.25" type="plane" material="plane"/>
+    <geom pos="4 0 0" type="hfield" rgba="0.8 0.8 0.8 1" hfield="terrain"/>
+    <light pos="30 30 30" dir="0 -0.447214 -0.894427" directional="true" ambient="0.3 0.3 0.3" diffuse="0.5 0.5 0.5" specular="0.5 0.5 0.5"/>
+    <body name="base_link" childclass="robot" pos="0 0 0.38">
+      <joint name="floating_base" type="free" limited="false" actuatorfrclimited="false"/>
+      <geom name="base_link_collision" class="collision" type="mesh" mesh="base_link.obj"/>
+      <geom name="base_link_visual" class="visual" type="mesh" mesh="base_link.obj"/>
+      <site name="base_link_site" pos="0 0 0"/>
+      <camera name="front_camera" pos="0 2 0.5" quat="0 0 0.707107 0.707107" mode="track" fovy="90"/>
+      <camera name="side_camera" pos="-2 0 0.5" quat="-0.5 -0.5 0.5 0.5" mode="track" fovy="90"/>
+      <body name="L1_link" pos="0 0.143 0" quat="0.696363 -0.696365 0.122789 0.122789">
+        <inertial pos="0.075 0 0.01" mass="1.3011" diaginertia="0.00025247 0.0038001 0.0039659"/>
+        <joint name="L1_joint" class="motor" pos="0 0 0" axis="0 0 1" range="-0.34905 1.22169"/>
+        <geom name="L1_link_collision" class="collision" type="mesh" mesh="L1_link.obj"/>
+        <geom name="L1_link_visual" class="visual" type="mesh" mesh="L1_link.obj"/>
+        <body name="L2_link" pos="0.15 0 0" quat="0.675576 0 0 0.73729">
+          <inertial pos="0.125 0 0.01" mass="2.0031" diaginertia="0.00039433 0.013708 0.013969"/>
+          <joint name="L2_joint" class="motor" pos="0 0 0" axis="0 0 1" range="-1.5708 1.0472"/>
+          <geom name="L2_link_collision" class="collision" type="mesh" mesh="L2_link.obj"/>
+          <geom name="L2_link_visual" class="visual" type="mesh" mesh="L2_link.obj"/>
+          <body name="L3_link" pos="0.25 0 0" quat="0.537312 0 0 -0.843384">
+            <inertial pos="0 0 0.01" mass="1.6268" diaginertia="0.0040743 0.0040743 0.0072906"/>
+            <joint name="L3_joint" class="motor" pos="0 0 0" axis="0 0 1"/>
+            <geom name="L3_link_collision" class="collision" type="mesh" mesh="L3_link.obj"/>
+            <geom name="L3_link_visual" class="visual" type="mesh" mesh="L3_link.obj"/>
+          </body>
+        </body>
+      </body>
+      <body name="R1_link" pos="0 -0.143 0" quat="0.696363 0.696365 0.122789 -0.122789">
+        <inertial pos="0.075 0 0.01" mass="1.3011" diaginertia="0.00025247 0.0038001 0.0039659"/>
+        <joint name="R1_joint" class="motor" pos="0 0 0" axis="0 0 1" range="-1.22169 0.34905"/>
+        <geom name="R1_link_collision" class="collision" type="mesh" mesh="R1_link.obj"/>
+        <geom name="R1_link_visual" class="visual" type="mesh" mesh="R1_link.obj"/>
+        <body name="R2_link" pos="0.15 0 0" quat="0.675576 0 0 -0.73729">
+          <inertial pos="0.125 0 0.01" mass="2.0031" diaginertia="0.00039433 0.013708 0.013969"/>
+          <joint name="R2_joint" class="motor" pos="0 0 0" axis="0 0 1" range="-1.0472 1.5708"/>
+          <geom name="R2_link_collision" class="collision" type="mesh" mesh="R2_link.obj"/>
+          <geom name="R2_link_visual" class="visual" type="mesh" mesh="R2_link.obj"/>
+          <body name="R3_link" pos="0.25 0 0" quat="0.537312 0 0 0.843384">
+            <inertial pos="0 0 0.01" mass="1.6268" diaginertia="0.0040743 0.0040743 0.0072906"/>
+            <joint name="R3_joint" class="motor" pos="0 0 0" axis="0 0 1"/>
+            <geom name="R3_link_collision" class="collision" type="mesh" mesh="R3_link.obj"/>
+            <geom name="R3_link_visual" class="visual" type="mesh" mesh="R3_link.obj"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="base_link" body2="L1_link"/>
+    <exclude body1="base_link" body2="R1_link"/>
+    <exclude body1="L1_link" body2="L2_link"/>
+    <exclude body1="L2_link" body2="L3_link"/>
+    <exclude body1="R1_link" body2="R2_link"/>
+    <exclude body1="R2_link" body2="R3_link"/>
+  </contact>
+
+  <actuator>
+    <general name="L1_joint_ctrl" class="motor" joint="L1_joint"/>
+    <general name="L2_joint_ctrl" class="motor" joint="L2_joint"/>
+    <general name="L3_joint_ctrl" class="motor" joint="L3_joint"/>
+    <general name="R1_joint_ctrl" class="motor" joint="R1_joint"/>
+    <general name="R2_joint_ctrl" class="motor" joint="R2_joint"/>
+    <general name="R3_joint_ctrl" class="motor" joint="R3_joint"/>
+  </actuator>
+
+  <sensor>
+    <framepos objtype="site" objname="base_link_site" name="base_link_site_pos"/>
+    <framequat objtype="site" objname="base_link_site" name="base_link_site_quat"/>
+    <framelinvel objtype="site" objname="base_link_site" name="base_link_site_linvel"/>
+    <frameangvel objtype="site" objname="base_link_site" name="base_link_site_angvel"/>
+    <velocimeter site="base_link_site" name="base_link_site_vel"/>
+  </sensor>
+</mujoco>

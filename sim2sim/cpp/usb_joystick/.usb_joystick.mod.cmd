@@ -1,0 +1,1 @@
+savedcmd_/home/albusgive/CPP_space/usb_joystick/usb_joystick.mod := printf '%s\n'   usb_joystick.o | awk '!x[$$0]++ { print("/home/albusgive/CPP_space/usb_joystick/"$$0) }' > /home/albusgive/CPP_space/usb_joystick/usb_joystick.mod

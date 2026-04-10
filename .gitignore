@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Training outputs
+locomotion/logs/
+history_logs/
+
+# Build artifacts
+wheel_leg/build/
+sim2real/.cache/
+sim2real/motor_test/build/
+
+# MuJoCo
+*.mjb
+*.mjcf
+*.urdf
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.pt
+*.pkl
+*.pth
+*.onnx
+EOF && echo "✅ .gitignore创建完成" && echo "" && echo "步骤5: 添加文件到Git..." && git add . && echo "✅ 文件添加完成" && echo "" && echo "当前目录内容统计：" && ls -la | head -10
