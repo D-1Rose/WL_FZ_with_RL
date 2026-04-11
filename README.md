@@ -50,7 +50,7 @@ python locomotion/evaluators/FZ_PID_eval.py \
 
 这里可以使用已经训练好的模型进行直接测试：
 python locomotion/evaluators/FZ_PID_eval.py \
-  --exp_name my_exp \
+  --exp_name test \
   --ckpt 300
 
 
