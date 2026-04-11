@@ -89,7 +89,7 @@ cd rsl_rl && pip install -e . && cd ..
 python -c "import file_index; file_index.install_file_index()"
 ```
 
-#### **MuJoCo安装（可选）**
+#### **MuJoCo安装（必要）**
 ```bash
 # 建议查看官方文档或询问AI工具安装MuJoCo
 # 通常需要：
