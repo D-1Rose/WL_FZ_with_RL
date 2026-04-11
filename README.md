@@ -52,7 +52,7 @@ python locomotion/evaluators/FZ_PID_eval.py \
 python locomotion/evaluators/FZ_PID_eval.py \
   --exp_name test \
   --ckpt 300
-
+(由于训练好的模型没有拉取上来，此处无法使用)
 
 # 3. 验证（MuJoCo）
 python locomotion/evaluators/mj_eval.py --RL \
@@ -61,6 +61,7 @@ python locomotion/evaluators/mj_eval.py --RL \
 
 
 这里同样可以使用已经训练好的模型进行直接测试：
+(此处同样无法使用，建议直接从前面的训练开始跑完整个工作流程)
 python locomotion/evaluators/mj_eval.py --RL \
   --model locomotion/logs/test_eval/2026-04-09_23-20-35_ckpt700/policy_fused.pt/policy_fused.pt \
   --log_name validation
