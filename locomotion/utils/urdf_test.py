@@ -26,7 +26,7 @@ def main():
     )    
     WL = scene.add_entity(
         gs.morphs.URDF(
-            file  = '/home/huang/下载/wheel_leg/src/description/meshes/wheel_leg.urdf',
+            file  = 'assets/description/urdf/wheel_leg.urdf',
             pos   = (0, 0, 0.40),
             quat = (1.0, 0.0, 0.0, 0.0),
         ),

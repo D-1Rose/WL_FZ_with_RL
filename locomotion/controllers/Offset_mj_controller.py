@@ -519,7 +519,7 @@ def main():
     
     from mj_keyboard import KeyboardCommander
     # 1. 加载模型
-    model = mujoco.MjModel.from_xml_path("/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/urdf/scence.xml")
+    model = mujoco.MjModel.from_xml_path("assets/description/urdf/scence.xml")
     data = mujoco.MjData(model)
     step = 0
     # 2. 实例化控制器

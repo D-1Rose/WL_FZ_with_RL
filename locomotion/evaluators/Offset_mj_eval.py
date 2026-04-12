@@ -139,7 +139,7 @@ def main():
     args = parser.parse_args()
 
     # 1. 加载模型
-    xml_path = "/home/huang/wheel_leg/wheel_legged_genesis_new/assets/description/urdf/scence.xml"
+    xml_path = "assets/description/urdf/scence.xml"
     model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
     model.opt.timestep = CFG.sim_dt # 确保 500Hz 步进
