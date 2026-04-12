@@ -16,7 +16,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/base_link.obj" />
+        <mesh filename="package://description/meshes/base_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -25,7 +25,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/base_link.obj" />
+        <mesh filename="package://description/meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -39,7 +39,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R1_link.obj" />
+        <mesh filename="package://description/meshes/R1_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -48,7 +48,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R1_link.obj" />
+        <mesh filename="package://description/meshes/R1_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -62,7 +62,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R2_link.obj" />
+        <mesh filename="package://description/meshes/R2_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.79216 0.81961 0.93333 1" />
@@ -71,7 +71,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R2_link.obj" />
+        <mesh filename="package://description/meshes/R2_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -85,7 +85,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R3_link.obj" />
+        <mesh filename="package://description/meshes/R3_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -94,7 +94,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/R3_link.obj" />
+        <mesh filename="package://description/meshes/R3_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -108,7 +108,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L1_link.obj" />
+        <mesh filename="package://description/meshes/L1_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -117,7 +117,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L1_link.obj" />
+        <mesh filename="package://description/meshes/L1_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -131,7 +131,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L2_link.obj" />
+        <mesh filename="package://description/meshes/L2_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.79216 0.81961 0.93333 1" />
@@ -140,7 +140,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L2_link.obj" />
+        <mesh filename="package://description/meshes/L2_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -154,7 +154,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L3_link.obj" />
+        <mesh filename="package://description/meshes/L3_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -163,7 +163,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://description/meshes/L3_link.obj" />
+        <mesh filename="package://description/meshes/L3_link.STL" />
       </geometry>
     </collision>
   </link>
